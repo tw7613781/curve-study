@@ -1,7 +1,7 @@
 # run the script in mainnet-fork only
 # brownie run scripts/stake.py --network mainnet-fork
 
-from brownie import Contract, accounts
+from brownie import Contract, accounts, interface
 from brownie_tokens import MintableForkToken
 
 def main():
@@ -20,4 +20,11 @@ def main():
 
     dai.approve(pool_addr, amount, {'from': accounts[0]})
     pool.add_liquidity([amount, 0, 0], 0, {'from': accounts[0]})
+    
+    gauges = registry.get_gauges(pool_addr)
+    gauge_addr = gauges[0][0]
+    gauge_contract = interface.LiquidityGauge(gauge_addr)
 
+    lp_token = MintableForkToken(gauge_contract.lp_token())
+    lp_token.approve(gauge_addr, amount, {'from': accounts[0]})
+    gauge_contract.deposit(lp_token.balanceOf(accounts[0]), {'from': accounts[0]})
