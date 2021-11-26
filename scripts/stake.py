@@ -1,3 +1,6 @@
+# run the script in mainnet-fork only
+# brownie run scripts/stake.py --network mainnet-fork
+
 from brownie import Contract, accounts
 from brownie_tokens import MintableForkToken
 
@@ -17,3 +20,4 @@ def main():
 
     dai.approve(pool_addr, amount, {'from': accounts[0]})
     pool.add_liquidity([amount, 0, 0], 0, {'from': accounts[0]})
+
