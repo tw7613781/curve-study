@@ -1,8 +1,9 @@
-
 #!/usr/bin/python3
+
+import pytest
 from brownie import Contract
 from brownie_tokens import MintableForkToken
-import pytest
+from helpers.utils import *
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -13,44 +14,48 @@ def isolate(fn_isolation):
 
 
 @pytest.fixture(scope="module")
-def token(Token, accounts):
-    return Token.deploy("Margarita", "MARG", 18, 1e21, {'from': accounts[0]})
+def margarita(Token, accounts):
+    return Token.deploy("Margarita", "MARG", 18, 1e21, {"from": accounts[0]})
+
 
 @pytest.fixture(scope="module")
 def alice(accounts):
     return accounts[0]
+
 
 @pytest.fixture(scope="module")
 def bob(accounts):
     return accounts[1]
 
 
-def load_contract(addr):
-    try:
-        cont = Contract(addr)
-    except:
-        cont = Contract.from_explorer(addr)
-    return cont
-
 @pytest.fixture(scope="module")
 def registry():
-    return load_contract('0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5')
+    return load_registry()
+
 
 @pytest.fixture(scope="module")
 def tripool(registry):
     return load_contract(registry.pool_list(0))
 
+
 @pytest.fixture(scope="module")
 def tripool_lp_token(registry, tripool):
     return load_contract(registry.get_lp_token(tripool))
+
 
 @pytest.fixture(scope="module")
 def tripool_funded(registry, alice, tripool):
     dai_addr = registry.get_coins(tripool)[0]
     dai = MintableForkToken(dai_addr)
-    amount = 1e21
-    dai.approve(tripool, amount, {'from': alice})
+    amount = 100000 * 10 ** dai.decimals()
+    dai.approve(tripool, amount, {"from": alice})
     dai._mint_for_testing(alice, amount)
 
     amounts = [amount, 0, 0]
-    tripool.add_liquidity(amounts, 0, {'from': alice})
+    tripool.add_liquidity(amounts, 0, {"from": alice})
+    return tripool
+
+
+@pytest.fixture(scope="module")
+def tripool_rewards(alice, tripool_funded):
+    return stake_into_rewards(tripool_funded, alice)
