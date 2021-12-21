@@ -1,5 +1,7 @@
-#!/usr/bin/python3
 
+#!/usr/bin/python3
+from brownie import Contract
+from brownie_tokens import MintableForkToken
 import pytest
 
 
@@ -13,3 +15,42 @@ def isolate(fn_isolation):
 @pytest.fixture(scope="module")
 def token(Token, accounts):
     return Token.deploy("Margarita", "MARG", 18, 1e21, {'from': accounts[0]})
+
+@pytest.fixture(scope="module")
+def alice(accounts):
+    return accounts[0]
+
+@pytest.fixture(scope="module")
+def bob(accounts):
+    return accounts[1]
+
+
+def load_contract(addr):
+    try:
+        cont = Contract(addr)
+    except:
+        cont = Contract.from_explorer(addr)
+    return cont
+
+@pytest.fixture(scope="module")
+def registry():
+    return load_contract('0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5')
+
+@pytest.fixture(scope="module")
+def tripool(registry):
+    return load_contract(registry.pool_list(0))
+
+@pytest.fixture(scope="module")
+def tripool_lp_token(registry, tripool):
+    return load_contract(registry.get_lp_token(tripool))
+
+@pytest.fixture(scope="module")
+def tripool_funded(registry, alice, tripool):
+    dai_addr = registry.get_coins(tripool)[0]
+    dai = MintableForkToken(dai_addr)
+    amount = 1e21
+    dai.approve(tripool, amount, {'from': alice})
+    dai._mint_for_testing(alice, amount)
+
+    amounts = [amount, 0, 0]
+    tripool.add_liquidity(amounts, 0, {'from': alice})
