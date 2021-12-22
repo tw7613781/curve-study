@@ -3,3 +3,8 @@
 reports:
   exclude_contracts:
     - SafeMath
+
+networks:
+    default: mainnet-fork
+    mainnet-fork:
+      gas_price: 990000000000
